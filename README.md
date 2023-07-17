@@ -1,6 +1,4 @@
-# Modul GIGa Tutor 2021
-
-![image](https://user-images.githubusercontent.com/16128257/118846766-3de85000-b8f7-11eb-81f2-5523d6d1850b.png)
+# Modul-Pemrograman-Gim
 
 ## Shooting-Platformer 2D Unity Tutorial
 
@@ -44,7 +42,7 @@ Assets Sprite untuk modul ini dapat di download di [Unlucid Adopted Assets](http
 
 ![LayoutUnity-SceneView](Images/LayoutUnity-SceneView.png)
 
-- `Sceneview` adalah tempat dimana kita berinteraksi dengan *world* yang telah kita buat. Di dalam Sceneview kita dapat select, memanipulasi, menggerakkan (dan lain sebagainya) Camera, Lighting, dan GameObject lain yang berada di dalam Scene tersebut.    
+- `Sceneview` adalah tempat dimana kita berinteraksi dengan *world* atau dunia virtual yang telah kita buat. Di dalam Sceneview kita dapat pilih, memanipulasi, menggerakkan (dan lain sebagainya) Camera, Lighting, dan GameObject lain yang berada di dalam Scene tersebut.    
 
 - Didalam satu project game Unity bisa terdapat beberapa `Scene`. Biasanya jika dalam project game tersebut terdapat sistem Tahapan Level maka 1 level tersebut direpesentasikan dengan 1 Scene. Jika kita ingin membuat Level baru dengan environment dan object yang mungkin berbeda, maka kita akan membuat scene baru. Scene baru juga bisa dibuat untuk membuat main menu, Score Detail Scene dan lain sebagainya. 
 ### Game View
@@ -73,6 +71,33 @@ Assets Sprite untuk modul ini dapat di download di [Unlucid Adopted Assets](http
 - `Inspector` befungsi untuk mengatur *properties* dan pengaturan untuk hampir semua yang ada di Unity Editor. Seperti GameObject, Unity Component, Assets, Materials, dan lain sebagainya.
 - `GameObject` adalah *base class* dari semua entitas yang berada dalam suatu Scene. Secara umumnya entitas yang berada dalam Scene seperti Camera, Lighting, Player, dan lain-lain base nya adalah GameObject. Dalam contoh Lighting/Light Object merupakan GameObject dengan menambahkan Light `Component` ke GameObject.
 - `Component` adalah behaviour dari GameObject. Component yang terdapat di GameObject bisa dilihat di Inspector Window. Transform yang mengatur posisi, scale, dan rotasi suatu object merupakan salah satu Component Object. 
+
+### Toolbar
+
+- ![Toolbar-Account](Images/image-UnityDocs.png)
+    
+    `Account Drop-down` untuk mengakses Unity Accounts milik kalian.
+
+- ![Toolbar-Cloud](Images/image-UnityDocs1.png)
+
+    Tombol `Unity Cloud` untuk membuka *Unity Service* window.
+
+- ![Toolba-UndoHistory](Images/image-UnityDocs2.png)
+
+    `Undo History` untuk melihat, mengulang, dan membatalkan aksi yang telah kalian lakukan pada Editor.
+
+- ![Toolbar-Search](Images/image-UnityDocs3.png)
+
+    Tombol `Search` akan membuka Search window yang digunakan pencarian yang lebih advance pada Editor.
+
+- ![Toolbar-Layer](Images/image-UnityDocs4.png)
+
+    `Layer Drop-down` berguna untuk mengontrol penempatan *GammeObejct* pada `SceneViem`.
+
+- ![Toolbar-Layout](Images/image-UnityDocs5.png)
+
+    `Layout Drop-down` berguna menyimpan dan mengedit Layout dari Editor kita sesuai dari prefensi masing-masing.
+
 
 ## E. Import Assets
 
@@ -598,6 +623,7 @@ using UnityEngine;
 
 public class EnemyController : MonoBehaviour
 {
+    //basic status yang ada di enemy
     [Header("Status")]
     public float health = 20;
     public float attack = 5;
@@ -607,18 +633,18 @@ public class EnemyController : MonoBehaviour
     [Header("Configuration")]
     [SerializeField] private float moveSpeed = 2.5f;
 
+    // Update is called once per frame
     void Update()
     {
         Movement();
-
         FallDie();
     }
 
-    protected virtual void Movement()
-    {
+    protected virtual void Movement() {
 
     }
 
+    //fungsi untuk mengurangi hp dari damage yang telah diterima
     public void DamagedBy(float damage)
     {
         health -= damage;
@@ -629,6 +655,8 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    //Fungsi untuk menghancurkan GameObject ketika jatuh ke bawah disaat
+    //psosisi Y GameObject kurang dari -20
     void FallDie()
     {
         if (transform.position.y < -20)
@@ -637,23 +665,29 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    //fungsi penghancuran GameObject
     void Die()
     {
         Destroy(gameObject);
     }
 
+    //fungsi mengambil nilai attack dari properti enemy
     public float GetAttackDamage()
     {
         return attack;
     }
 
+    // bekerja saat collider "menyentuh" trigger
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.tag == "Bullet")
         {
+            //fungsi mengambil nilai damage dari bullet terlebih dahulu
             Bullet bullet = collision.GetComponent<Bullet>();
             if (bullet.targetTag == "Enemy")
             {
+                //lalu akan mengurangi darah dari GameObject ini ("enemy")
+                //menggunakan fungsi DamagedBy()
                 float damage = bullet.GetDamage();
                 DamagedBy(damage);
                 Destroy(collision.gameObject);
@@ -1429,10 +1463,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class UIManager : MonoBehaviour
 {
-    public Text enemyProgressText;
+    public TextMeshProUGUI enemyProgressText;
     public Image playerHealthBar;
     public float playerHealthBarFullX = 78;
 
@@ -1551,6 +1586,265 @@ public class EnemyController : MonoBehaviour
 - Coba mainkan dan kalahkan semua enemy!
 
 ![image](https://user-images.githubusercontent.com/16128257/119175145-ad934200-ba93-11eb-8f95-857e21a105f6.png)
+
+## UI Untuk Controller
+
+- kita modifikasi script Player Controller untuk mengimplementasi UI tombol ke dalam Gim. Berikut modfikasi dari scriptnya.
+
+```c#
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour
+{
+    public static PlayerController Instance { get; private set; }
+
+    [Header("Properties")]
+    [SerializeField] private SpriteRenderer graphic;
+
+    [Header("Status")]
+    public float health = 100;
+    public float attack = 5;
+
+    public bool canBeMoved = true;
+
+    public float healthMax { private set; get; }
+
+    private bool isGrounded = true;
+    private bool isShooting = true;
+
+    [Header("Configuration")]
+    [SerializeField] private float moveSpeed = 2.5f;
+    [SerializeField] private float jumpForce = 5.0f;
+    [SerializeField] private float shootingTimeMax = 1.0f;
+    [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private float bulletSpeed = 10;
+
+    [SerializeField] private Vector2 gunOffset;
+
+    private float shootingTime = 0;
+    private float x;
+    private bool moveLeft, moveRight;
+
+    [SerializeField] private float minGroundDistance = 1.5f;
+
+    private Rigidbody2D rb2;
+
+    void Awake()
+    {
+        Instance = this;
+    }
+
+    void Start()
+    {
+        rb2 = GetComponent<Rigidbody2D>();
+
+        shootingTime = shootingTimeMax;
+        healthMax = health;
+    }
+
+    void Update()
+    {
+        if (canBeMoved)
+        {
+            MovementController();
+            JumpController();
+            ShootController();
+        }
+
+        FallDie();
+
+        if (moveLeft)
+        {
+            //float x = Input.GetAxisRaw("Horizontal");
+
+            Vector2 direction = rb2.velocity;
+            direction.x = -1 * moveSpeed;
+
+            rb2.velocity = direction;
+
+            //sprite dibalik ketika arahnya ke kiri
+            if (direction.x < 0)
+            {
+                graphic.flipX = true;
+            }
+            else if (direction.x > 0)
+            {
+                graphic.flipX = false;
+            }
+        }
+
+        if (moveRight)
+        {
+            //float x = Input.GetAxisRaw("Horizontal");
+
+            Vector2 direction = rb2.velocity;
+            direction.x = 1 * moveSpeed;
+
+            rb2.velocity = direction;
+
+            //sprite dibalik ketika arahnya ke kiri
+            if (direction.x < 0)
+            {
+                graphic.flipX = true;
+            }
+            else if (direction.x > 0)
+            {
+                graphic.flipX = false;
+            }
+        }
+
+    }
+
+    void MovementController()
+    {
+        float x = Input.GetAxisRaw("Horizontal");
+
+        Vector2 direction = rb2.velocity;
+        direction.x = x * moveSpeed;
+
+        rb2.velocity = direction;
+
+        //sprite dibalik ketika arahnya ke kiri
+        if (direction.x < 0)
+        {
+            graphic.flipX = true;
+        }
+        else if (direction.x > 0)
+        {
+            graphic.flipX = false;
+        }
+    }
+
+    void JumpController()
+    {
+        RaycastHit2D ray = Physics2D.Raycast(transform.position, Vector2.down, 10, LayerMask.GetMask("Obstacle"));
+
+        if (ray && ray.distance < minGroundDistance)
+        {
+            isGrounded = true;
+        }
+        else
+        {
+            isGrounded = false;
+        }
+
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            Jump();
+        }
+    }
+
+    public void Jump()
+    {
+        if (isGrounded)
+        {
+            rb2.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+        }
+    }
+
+    void ShootController()
+    {
+        isShooting = Input.GetKey(KeyCode.Z);
+
+        if (isShooting)
+        {
+            shootingTime -= Time.deltaTime;
+        }
+        else
+        {
+            shootingTime = shootingTimeMax;
+        }
+
+        if (isShooting && shootingTime < 0)
+        {
+            shootingTime = shootingTimeMax;
+            Shoot();
+        }
+    }
+
+    public void Shoot()
+    {
+        int direction = (graphic.flipX == false ? 1 : -1);
+
+        Vector2 gunPos = new Vector2(gunOffset.x * direction + transform.position.x, gunOffset.y + transform.position.y);
+
+        GameObject bulletObj = Instantiate(bulletPrefab, gunPos, Quaternion.identity);
+        Bullet bullet = bulletObj.GetComponent<Bullet>();
+
+        if (bullet)
+        {
+            bullet.Launch(new Vector2(direction, 0), "Enemy", bulletSpeed, attack);
+        }
+    }
+
+    public void DamagedBy(float damage)
+    {
+        health -= damage;
+        if (health <= 0)
+        {
+            health = 0;
+            Die();
+        }
+    }
+
+    void FallDie()
+    {
+        if (transform.position.y < -20)
+        {
+            Die();
+        }
+    }
+
+    void Die()
+    {
+        graphic.enabled = false;
+        canBeMoved = false;
+        //this.gameObject
+        GameManager.GameOver();
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.collider.tag == "Enemy")
+        {
+            float damage = collision.collider.GetComponent<EnemyController>().GetAttackDamage();
+            DamagedBy(damage);
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.tag == "Bullet")
+        {
+            Bullet bullet = collision.GetComponent<Bullet>();
+            if (bullet.targetTag == "Player")
+            {
+                float damage = bullet.GetDamage();
+                DamagedBy(damage);
+                Destroy(collision.gameObject);
+            }
+        }
+    }
+
+    public void MoveLeft()
+    {
+        moveLeft = true;
+    }
+
+    public void MoveRigth()
+    {
+        moveRight = true;
+    }
+
+    public void ResetMove()
+    {
+        moveRight = false;
+        moveLeft = false;
+    }
+}
+```
 
 ## J. Membuat Scene Baru Agar Game Lebih Menyenangkan
 ### Pengenalan pada Build Settings
@@ -1962,10 +2256,6 @@ public class PlayerController : MonoBehaviour
 
 ## Penutup
 Terima Kasih telah mengikuti GIGa Tutor 2021. Jangan lupa untuk datang pada Event GIGa Talk 2021 pada tanggal 23 Mei 2021! Banyak tema dan tips menarik yang akan dibahas!
-
-![image](https://user-images.githubusercontent.com/16128257/118846918-6708e080-b8f7-11eb-9b16-f11237257dd3.png)
-
-![image](https://user-images.githubusercontent.com/16128257/118847372-de3e7480-b8f7-11eb-9862-eea6b627c8d0.png)
 
 ## Terima Kasih !!
 Kami nantikan kedatanganmu di GIGa Talk 👊😎
